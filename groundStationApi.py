@@ -4,6 +4,9 @@ import pandas as pd
 import io
 from typing import Any, Dict
 
+# need this so the timestamp doesn't look weird
+EXCEL_EPOCH = pd.Timestamp("1899-12-30")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -25,7 +28,7 @@ def parse_csv(file_bytes: bytes) -> pd.DataFrame:
     for col in numeric_cols:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    data["timestamp"] = pd.to_timedelta(data["date"], unit="D") + pd.to_timedelta(data["hour"], unit="h")
+    data["timestamp"] = EXCEL_EPOCH + pd.to_timedelta(data["date"], unit="D") + pd.to_timedelta(data["hour"], unit="h")
 
     # would like to do some error checking of the file + it's contents, but leaving for now :/
 
@@ -58,10 +61,13 @@ def compute_metrics(data: pd.DataFrame) -> Dict[str, Any]:
     overall["per_station"] = sorted(per_station, key=lambda s: s["station_id"])
     return overall
 
+# analyze the incoming csv
 def analyze_input(file_bytes: bytes):
 
     data = parse_csv(file_bytes)
     metrics = compute_metrics(data)
+
+    # would analyze the anomalies here too, something a little more in depth than compute_metrics
 
     summary = {
         "status": "ok",
